@@ -41,6 +41,11 @@
 
 @end
 
+// Fork: persisted gate for the cached-appId auto-init below. Same key and store
+// (OneSignalUserDefaults.initShared) as OSUD_AUTO_INIT_ALLOWED in the forked
+// iOS SDK, so it also works against the upstream XCFramework. Unset = NO.
+static NSString *const kOSAutoInitAllowedKey = @"onesignal_auto_init_allowed";
+
 @implementation OneSignalPlugin
 
 + (instancetype)sharedInstance {
@@ -57,7 +62,10 @@
 
   OneSignalWrapper.sdkType = @"flutter";
   OneSignalWrapper.sdkVersion = @"050700";
-  [OneSignal initialize:nil withLaunchOptions:nil];
+  // Fork: only self-init from the cached appId when the host app allowed it.
+  if ([OneSignalUserDefaults.initShared getSavedBoolForKey:kOSAutoInitAllowedKey
+                                              defaultValue:NO])
+    [OneSignal initialize:nil withLaunchOptions:nil];
 
   OneSignalPlugin.sharedInstance.channel =
       [FlutterMethodChannel methodChannelWithName:@"OneSignal"
@@ -86,6 +94,8 @@
     [self setConsentRequired:call withResult:result];
   else if ([@"OneSignal#consentGiven" isEqualToString:call.method])
     [self setConsentGiven:call withResult:result];
+  else if ([@"OneSignal#setAutoInitAllowed" isEqualToString:call.method])
+    [self setAutoInitAllowed:call withResult:result];
   else
     result(FlutterMethodNotImplemented);
 }
@@ -93,7 +103,17 @@
 #pragma mark Init
 
 - (void)initialize:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+  [OneSignalUserDefaults.initShared saveBoolForKey:kOSAutoInitAllowedKey
+                                         withValue:YES];
   [OneSignal initialize:call.arguments[@"appId"] withLaunchOptions:nil];
+  result(nil);
+}
+
+- (void)setAutoInitAllowed:(FlutterMethodCall *)call
+                withResult:(FlutterResult)result {
+  BOOL allowed = [call.arguments[@"allowed"] boolValue];
+  [OneSignalUserDefaults.initShared saveBoolForKey:kOSAutoInitAllowedKey
+                                         withValue:allowed];
   result(nil);
 }
 

@@ -104,4 +104,15 @@ class OneSignal {
     return await _channel
         .invokeMethod("OneSignal#consentRequired", {'required': require});
   }
+
+  /// Sets whether the native SDK may initialize itself on a later launch using
+  /// the app id cached from a previous run, without [initialize] being called.
+  ///
+  /// The value is persisted natively and defaults to `false`. [initialize]
+  /// always works and sets it to `true`. Call with `false` before moving a
+  /// user away from OneSignal so the SDK stays dormant from the next launch on.
+  static Future<void> setAutoInitAllowed(bool allowed) async {
+    return await _channel
+        .invokeMethod("OneSignal#setAutoInitAllowed", {'allowed': allowed});
+  }
 }

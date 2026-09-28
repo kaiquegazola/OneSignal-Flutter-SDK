@@ -163,6 +163,10 @@ class OneSignalMockChannelController {
         state.requiresPrivacyConsent =
             (call.arguments as Map<dynamic, dynamic>)['required'] as bool?;
         break;
+      case "OneSignal#setAutoInitAllowed":
+        state.autoInitAllowed =
+            (call.arguments as Map<dynamic, dynamic>)['allowed'] as bool?;
+        break;
       case "OneSignal#setAppId":
         state.setAppId(call.arguments);
         break;
@@ -410,6 +414,7 @@ class OneSignalState {
   late OSLogLevel logLevel;
   late OSLogLevel visualLevel;
   bool? consentGiven = false;
+  bool? autoInitAllowed;
   bool? calledPromptPermission;
   bool? locationShared;
   bool? locationPermissionRequested;

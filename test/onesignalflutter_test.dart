@@ -94,6 +94,16 @@ void main() {
       });
     });
 
+    group('setAutoInitAllowed', () {
+      test('setAutoInitAllowed sends the boolean to native', () async {
+        await OneSignal.setAutoInitAllowed(true);
+        expect(channelController.state.autoInitAllowed, isTrue);
+
+        await OneSignal.setAutoInitAllowed(false);
+        expect(channelController.state.autoInitAllowed, isFalse);
+      });
+    });
+
     group('static properties', () {
       test('static properties are initialized', () {
         expect(OneSignal.Debug, isNotNull);

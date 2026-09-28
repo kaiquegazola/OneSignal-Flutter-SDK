@@ -99,6 +99,7 @@ public class OneSignalPlugin extends FlutterMessengerResponder
         if (call.method.contentEquals("OneSignal#initialize")) this.initWithContext(call, result);
         else if (call.method.contentEquals("OneSignal#consentRequired")) this.setConsentRequired(call, result);
         else if (call.method.contentEquals("OneSignal#consentGiven")) this.setConsentGiven(call, result);
+        else if (call.method.contentEquals("OneSignal#setAutoInitAllowed")) this.setAutoInitAllowed(call, result);
         else if (call.method.contentEquals("OneSignal#login")) this.login(call, result);
         else if (call.method.contentEquals("OneSignal#loginWithJWT")) this.loginWithJWT(call, result);
         else if (call.method.contentEquals("OneSignal#logout")) this.logout(call, result);
@@ -120,6 +121,12 @@ public class OneSignalPlugin extends FlutterMessengerResponder
     private void setConsentGiven(MethodCall call, Result reply) {
         boolean granted = call.argument("granted");
         OneSignal.setConsentGiven(granted);
+        replySuccess(reply, null);
+    }
+
+    private void setAutoInitAllowed(MethodCall call, Result reply) {
+        boolean allowed = call.argument("allowed");
+        OneSignal.setAutoInitAllowed(context, allowed);
         replySuccess(reply, null);
     }
 

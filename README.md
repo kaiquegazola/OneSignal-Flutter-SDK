@@ -4,6 +4,26 @@
 
 ### OneSignal Flutter SDK [![Build Status](https://travis-ci.org/OneSignal/OneSignal-Flutter-SDK.svg?branch=master)](https://travis-ci.org/OneSignal/OneSignal-Flutter-SDK)
 
+## Fork: no auto-init (`5.7.0-noautoinit.1`)
+
+This fork of `onesignal_flutter` 5.7.0 stops the native SDKs from initializing themselves with the app id cached from a previous run, so devices that are no longer OneSignal users stop counting as OneSignal MAU.
+
+- A persisted gate (`onesignal_auto_init_allowed`) defaults to **not allowed**.
+- `OneSignal.initialize(appId)` always works and sets the gate to allowed.
+- `OneSignal.setAutoInitAllowed(bool)` changes the gate (method channel `OneSignal#setAutoInitAllowed`).
+- iOS: the plugin only calls `[OneSignal initialize:nil ...]` at engine registration when the gate is allowed (stored in `OneSignalUserDefaults.initShared`, the same store the forked iOS SDK reads).
+- Android: the plugin consumes the forked native SDK `com.github.kaiquegazola.OneSignal-Android-SDK:*:5.10.2-noautoinit.1` from JitPack and substitutes every upstream `com.onesignal` module the fork ships.
+
+Consume it from git:
+
+```yaml
+dependencies:
+  onesignal_flutter:
+    git:
+      url: https://github.com/kaiquegazola/OneSignal-Flutter-SDK.git
+      ref: 5.7.0-noautoinit.1
+```
+
 ---
 
 #### ⚠️ Migration Advisory for current OneSignal customers
