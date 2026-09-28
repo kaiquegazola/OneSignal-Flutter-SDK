@@ -11,7 +11,7 @@ def oneSignalVersion = '5.10.2'
 // Fork: native SDK with the auto-init gate, built by JitPack from
 // github.com/kaiquegazola/OneSignal-Android-SDK. Every com.onesignal module the fork
 // ships is substituted (direct and transitive) so the upstream copy is never resolved.
-def oneSignalForkVersion = '5.10.2-noautoinit.3'
+def oneSignalForkVersion = '5.10.2-noautoinit.4'
 def oneSignalForkGroup = 'com.github.kaiquegazola.OneSignal-Android-SDK'
 def oneSignalForkModules = ['OneSignal', 'core', 'notifications', 'in-app-messages', 'location']
 def oneSignalDisableLocation = safeEnvFlagGet('ONESIGNAL_DISABLE_LOCATION')

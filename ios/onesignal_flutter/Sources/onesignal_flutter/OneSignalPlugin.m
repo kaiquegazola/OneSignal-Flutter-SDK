@@ -60,6 +60,18 @@ static void OSFlutterDisableReceiveReceipts(void) {
                          forKey:OSResilientStorage.keyReceiveReceiptsEnabled];
 }
 
+// Fork: closing the gate must also silence an SDK already running in this
+// process and the notification service extension. Require privacy consent
+// (written directly: setConsentRequired: is a no-op once ios_params stored the
+// key) and withdraw it, so every non-GET request (sessions, user updates,
+// receive receipts) is blocked. The forked iOS SDK keeps ios_params from
+// undoing this while the gate is closed. Consent given + initialize resume.
+static void OSFlutterSilenceOneSignal(void) {
+  [[OSRemoteParamController sharedController] savePrivacyConsentRequired:YES];
+  [OSPrivacyConsentController consentGranted:NO];
+  OSFlutterDisableReceiveReceipts();
+}
+
 @implementation OneSignalPlugin
 
 + (instancetype)sharedInstance {
@@ -131,7 +143,7 @@ static void OSFlutterDisableReceiveReceipts(void) {
   [OneSignalUserDefaults.initShared saveBoolForKey:kOSAutoInitAllowedKey
                                          withValue:allowed];
   if (!allowed)
-    OSFlutterDisableReceiveReceipts();
+    OSFlutterSilenceOneSignal();
   result(nil);
 }
 
