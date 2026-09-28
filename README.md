@@ -4,7 +4,7 @@
 
 ### OneSignal Flutter SDK [![Build Status](https://travis-ci.org/OneSignal/OneSignal-Flutter-SDK.svg?branch=master)](https://travis-ci.org/OneSignal/OneSignal-Flutter-SDK)
 
-## Fork: no auto-init (`5.7.0-noautoinit.3`)
+## Fork: no auto-init (`5.7.0-noautoinit.4`)
 
 This fork of `onesignal_flutter` 5.7.0 stops the native SDKs from initializing themselves with the app id cached from a previous run, so devices that are no longer OneSignal users stop counting as OneSignal MAU.
 
@@ -12,6 +12,8 @@ This fork of `onesignal_flutter` 5.7.0 stops the native SDKs from initializing t
 - `OneSignal.initialize(appId)` always works and sets the gate to allowed.
 - `OneSignal.setAutoInitAllowed(bool)` changes the gate (method channel `OneSignal#setAutoInitAllowed`).
 - iOS: the plugin only calls `[OneSignal initialize:nil ...]` at engine registration when the gate is allowed (stored in `OneSignalUserDefaults.initShared`, the same store the forked iOS SDK reads).
+- iOS: while the gate is off the plugin also turns OneSignal receive receipts off in the App Group store the upstream `OneSignalExtension` (notification service extension) reads (`OS_ENABLE_RECEIVE_RECEIPTS` and its `OSResilientStorage` mirror). An explicit `initialize` fetches `ios_params` and restores the server value.
+- Upgrade behaviour: the gate defaults to **not allowed**, so after upgrading a device that should stay on OneSignal does not start the SDK until the app is opened and calls `OneSignal.initialize` (which persists the gate as allowed). Until then it gets no OneSignal pushes that depend on a running SDK. This is intended: devices whose app never runs again stop counting as MAU.
 - Android: the plugin consumes the forked native SDK `com.github.kaiquegazola.OneSignal-Android-SDK:*:5.10.2-noautoinit.3` from JitPack and substitutes every upstream `com.onesignal` module the fork ships.
 
 Consume it from git:
@@ -21,7 +23,7 @@ dependencies:
   onesignal_flutter:
     git:
       url: https://github.com/kaiquegazola/OneSignal-Flutter-SDK.git
-      ref: 5.7.0-noautoinit.3
+      ref: 5.7.0-noautoinit.4 # prefer the tag's commit sha to pin immutably
 ```
 
 iOS: the plugin gate above already works with the upstream `OneSignalXCFramework` 5.7.0. To also gate the native SDK itself (`[OneSignal initialize:nil]` from any caller, plus `[OneSignal setAutoInitAllowed:]`), point **both** the Runner and the Notification Service Extension targets of the host `ios/Podfile` at the forked iOS SDK (CocoaPods needs the same source for the pod in every target; add it to any other extension target that uses `OneSignalXCFramework` too):
@@ -30,12 +32,12 @@ iOS: the plugin gate above already works with the upstream `OneSignalXCFramework
 target 'Runner' do
   use_frameworks!
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-  pod 'OneSignalXCFramework', :git => 'https://github.com/kaiquegazola/OneSignal-iOS-SDK.git', :tag => '5.7.0-noautoinit.2'
+  pod 'OneSignalXCFramework', :git => 'https://github.com/kaiquegazola/OneSignal-iOS-SDK.git', :tag => '5.7.0-noautoinit.4'
 end
 
 target 'OneSignalNotificationServiceExtension' do
   use_frameworks!
-  pod 'OneSignalXCFramework', :git => 'https://github.com/kaiquegazola/OneSignal-iOS-SDK.git', :tag => '5.7.0-noautoinit.2'
+  pod 'OneSignalXCFramework', :git => 'https://github.com/kaiquegazola/OneSignal-iOS-SDK.git', :tag => '5.7.0-noautoinit.4'
 end
 ```
 

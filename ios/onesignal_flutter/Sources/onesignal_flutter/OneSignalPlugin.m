@@ -34,6 +34,7 @@
 #import "./include/onesignal_flutter/OSFlutterNotifications.h"
 #import "./include/onesignal_flutter/OSFlutterSession.h"
 #import "./include/onesignal_flutter/OSFlutterUser.h"
+#import <OneSignalOSCore/OneSignalOSCore-Swift.h>
 
 @interface OneSignalPlugin ()
 
@@ -45,6 +46,19 @@
 // (OneSignalUserDefaults.initShared) as OSUD_AUTO_INIT_ALLOWED in the forked
 // iOS SDK, so it also works against the upstream XCFramework. Unset = NO.
 static NSString *const kOSAutoInitAllowedKey = @"onesignal_auto_init_allowed";
+
+// Fork: the notification service extension runs the upstream
+// OneSignalExtension binary, which sends receive receipts based on the shared
+// flag the SDK stores from ios_params (App Group defaults, mirrored in
+// OSResilientStorage for locked-device reads). While the gate is off OneSignal
+// must stay silent, so turn receipts off there too. An explicit initialize
+// fetches ios_params again and restores the server value.
+static void OSFlutterDisableReceiveReceipts(void) {
+  [OneSignalUserDefaults.initShared saveBoolForKey:OSUD_RECEIVE_RECEIPTS_ENABLED
+                                         withValue:NO];
+  [OSResilientStorage setString:@"0"
+                         forKey:OSResilientStorage.keyReceiveReceiptsEnabled];
+}
 
 @implementation OneSignalPlugin
 
@@ -66,6 +80,8 @@ static NSString *const kOSAutoInitAllowedKey = @"onesignal_auto_init_allowed";
   if ([OneSignalUserDefaults.initShared getSavedBoolForKey:kOSAutoInitAllowedKey
                                               defaultValue:NO])
     [OneSignal initialize:nil withLaunchOptions:nil];
+  else
+    OSFlutterDisableReceiveReceipts();
 
   OneSignalPlugin.sharedInstance.channel =
       [FlutterMethodChannel methodChannelWithName:@"OneSignal"
@@ -114,6 +130,8 @@ static NSString *const kOSAutoInitAllowedKey = @"onesignal_auto_init_allowed";
   BOOL allowed = [call.arguments[@"allowed"] boolValue];
   [OneSignalUserDefaults.initShared saveBoolForKey:kOSAutoInitAllowedKey
                                          withValue:allowed];
+  if (!allowed)
+    OSFlutterDisableReceiveReceipts();
   result(nil);
 }
 
