@@ -4,7 +4,7 @@
 
 ### OneSignal Flutter SDK [![Build Status](https://travis-ci.org/OneSignal/OneSignal-Flutter-SDK.svg?branch=master)](https://travis-ci.org/OneSignal/OneSignal-Flutter-SDK)
 
-## Fork: no auto-init (`5.7.0-noautoinit.2`)
+## Fork: no auto-init (`5.7.0-noautoinit.3`)
 
 This fork of `onesignal_flutter` 5.7.0 stops the native SDKs from initializing themselves with the app id cached from a previous run, so devices that are no longer OneSignal users stop counting as OneSignal MAU.
 
@@ -12,7 +12,7 @@ This fork of `onesignal_flutter` 5.7.0 stops the native SDKs from initializing t
 - `OneSignal.initialize(appId)` always works and sets the gate to allowed.
 - `OneSignal.setAutoInitAllowed(bool)` changes the gate (method channel `OneSignal#setAutoInitAllowed`).
 - iOS: the plugin only calls `[OneSignal initialize:nil ...]` at engine registration when the gate is allowed (stored in `OneSignalUserDefaults.initShared`, the same store the forked iOS SDK reads).
-- Android: the plugin consumes the forked native SDK `com.github.kaiquegazola.OneSignal-Android-SDK:*:5.10.2-noautoinit.2` from JitPack and substitutes every upstream `com.onesignal` module the fork ships.
+- Android: the plugin consumes the forked native SDK `com.github.kaiquegazola.OneSignal-Android-SDK:*:5.10.2-noautoinit.3` from JitPack and substitutes every upstream `com.onesignal` module the fork ships.
 
 Consume it from git:
 
@@ -21,14 +21,25 @@ dependencies:
   onesignal_flutter:
     git:
       url: https://github.com/kaiquegazola/OneSignal-Flutter-SDK.git
-      ref: 5.7.0-noautoinit.2
+      ref: 5.7.0-noautoinit.3
 ```
 
-iOS: to also gate the Notification Service Extension receive receipts, point both the Runner and the NSE targets of the host `ios/Podfile` at the forked XCFramework:
+iOS: the plugin gate above already works with the upstream `OneSignalXCFramework` 5.7.0. To also gate the native SDK itself (`[OneSignal initialize:nil]` from any caller, plus `[OneSignal setAutoInitAllowed:]`), point **both** the Runner and the Notification Service Extension targets of the host `ios/Podfile` at the forked iOS SDK (CocoaPods needs the same source for the pod in every target; add it to any other extension target that uses `OneSignalXCFramework` too):
 
 ```ruby
-pod 'OneSignalXCFramework', :git => 'https://github.com/kaiquegazola/OneSignal-iOS-SDK.git', :tag => '5.7.0-noautoinit.1'
+target 'Runner' do
+  use_frameworks!
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  pod 'OneSignalXCFramework', :git => 'https://github.com/kaiquegazola/OneSignal-iOS-SDK.git', :tag => '5.7.0-noautoinit.2'
+end
+
+target 'OneSignalNotificationServiceExtension' do
+  use_frameworks!
+  pod 'OneSignalXCFramework', :git => 'https://github.com/kaiquegazola/OneSignal-iOS-SDK.git', :tag => '5.7.0-noautoinit.2'
+end
 ```
+
+The fork compiles `OneSignalFramework` from source; every other module stays the upstream OneSignal-signed 5.7.0 binary. The NSE therefore runs the upstream `OneSignalExtension` binary, so its receive receipts are not gated by this pod (CocoaPods compiles one framework per pod, and the upstream binaries link `OneSignalExtension.framework` directly). Works with `use_frameworks!` and `use_frameworks! :linkage => :static`.
 
 ---
 
