@@ -12,6 +12,10 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
+import kotlin.coroutines.Continuation;
+import kotlin.coroutines.CoroutineContext;
+import kotlin.coroutines.EmptyCoroutineContext;
+import kotlin.coroutines.intrinsics.IntrinsicsKt;
 
 /** OnesignalPlugin */
 public class OneSignalPlugin extends FlutterMessengerResponder
@@ -106,10 +110,35 @@ public class OneSignalPlugin extends FlutterMessengerResponder
         else replyNotImplemented(result);
     }
 
-    private void initWithContext(MethodCall call, Result reply) {
+    private void initWithContext(MethodCall call, final Result reply) {
         String appId = call.argument("appId");
-        OneSignal.initWithContext(context, appId);
-        replySuccess(reply, null);
+        // Fork: reply only once init has completed, so a failed init reaches Dart
+        // (and the host can retry) instead of failing later in the background.
+        Object immediate = OneSignal.initWithContextSuspend(context, appId, new Continuation<Boolean>() {
+            @NonNull
+            @Override
+            public CoroutineContext getContext() {
+                return EmptyCoroutineContext.INSTANCE;
+            }
+
+            @Override
+            public void resumeWith(@NonNull Object result) {
+                replyInit(reply, result);
+            }
+        });
+        if (immediate != IntrinsicsKt.getCOROUTINE_SUSPENDED()) {
+            replyInit(reply, immediate);
+        }
+    }
+
+    // `result` is the Boolean returned by initWithContextSuspend, or a Kotlin
+    // Result failure wrapping the thrown exception.
+    private void replyInit(Result reply, Object result) {
+        if (Boolean.TRUE.equals(result)) {
+            replySuccess(reply, null);
+        } else {
+            replyError(reply, "OneSignal", "initWithContext failed: " + result, null);
+        }
     }
 
     private void setConsentRequired(MethodCall call, Result reply) {
